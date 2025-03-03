@@ -14,7 +14,7 @@ def save_database_to_github():
 
     github_username = os.getenv('GITHUB_USERNAME')
     github_token = os.getenv('GITHUB_TOKEN')
-    repo_url = f"https://{github_username}:{github_token}@github.com/YOUR_USERNAME/YOUR_REPO.git"
+    repo_url = f"https://{mouse577}:{ghp_5z7y0odqUnqVCBwgTzpTM87q1tgG503ySHif}@github.com/YOUR_USERNAME/YOUR_REPO.git"
 
     subprocess.run(["git", "config", "--global", "user.email", "automation@example.com"])
     subprocess.run(["git", "config", "--global", "user.name", "Render Automation Bot"])
