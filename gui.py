@@ -178,7 +178,7 @@ class DatabaseApp(QWidget):
         self.load_data()
 
 def run_gui():
-    create_empty_database(DB_FILE)  # Ensure database/tables exist before GUI starts
+    create_empty_database()  # Ensure database/tables exist before GUI starts
     app = QApplication(sys.argv)
     window = DatabaseApp()
     window.show()
