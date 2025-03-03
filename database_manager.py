@@ -2,14 +2,14 @@ import sqlite3
 import pandas as pd
 
 # Database file paths
-DB_FILE = "PPL_Scholl_428_MouseDatabase.db"  # Primary database
+DB_FILE = "mouse_database.db"  # Primary database
 NEW_DB_FILE = "PPL_Scholl_428_Deceased_MouseDatabase.db"  # Secondary database
 TABLE_NAME = "mouse_list"  # Table name
 
 # Column names (ensures consistency across functions)
 COLUMN_NAMES = [
-    "ID_TATOO_NT", "CAGE_NUM", "MOUSELINE", "GENOTYPE", "GENDER",
-    "DOB", "AVAILABLE", "HEALTH", "USER_NAME", "USER_MANIPULATIONS", "STATUS", "COMMENTS"
+    "id", "cage_number", "mouseline", "genotype", "gender",
+    "dob", "available", "health", "username", "user_manipulations", "status", "comments"
 ]
 
 # ----------------- DATABASE INITIALIZATION -----------------
@@ -20,18 +20,18 @@ def initialize_database():
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
             INDEX_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            ID_TATOO_NT TEXT,
-            CAGE_NUM INTEGER,
-            MOUSELINE TEXT,
-            GENOTYPE TEXT,
-            GENDER TEXT,
-            DOB TEXT,
-            AVAILABLE TEXT,
-            HEALTH TEXT,
-            USER_NAME TEXT,
-            USER_MANIPULATIONS TEXT,
-            STATUS TEXT
-            COMMENTS TEXT DEFAULT ''
+            id TEXT,
+            cage_number INTEGER,
+            mouseline TEXT,
+            genotype TEXT,
+            gender TEXT,
+            dob TEXT,
+            available TEXT,
+            health TEXT,
+            username TEXT,
+            user_manipulations TEXT,
+            status TEXT
+            comments TEXT
         )
     """)
 
@@ -47,18 +47,18 @@ def create_empty_database():
     cursor = conn.cursor()
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
-            INDEX_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-            ID_TATOO_NT TEXT,
-            CAGE_NUM INTEGER,
-            MOUSELINE TEXT,
-            GENOTYPE TEXT,
-            GENDER TEXT,
-            DOB TEXT,
-            AVAILABLE TEXT,
-            HEALTH TEXT,
-            USER_NAME TEXT,
-            USER_MANIPULATIONS TEXT,
-            STATUS TEXT
+            id TEXT,
+            cage_number INTEGER,
+            mouseline TEXT,
+            genotype TEXT,
+            gender TEXT,
+            dob TEXT,
+            available TEXT,
+            health TEXT,
+            username TEXT,
+            user_manipulations TEXT,
+            status TEXT
+            comments TEXT
         )
     """)
     conn.commit()
@@ -68,21 +68,21 @@ def create_empty_database():
 def fetch_data(db_file):
     """Fetches all data from the specified SQLite database, excluding INDEX_ID."""
     conn = sqlite3.connect(db_file)
-    df = pd.read_sql(f"SELECT ID_TATOO_NT, CAGE_NUM, MOUSELINE, GENOTYPE, GENDER, DOB, AVAILABLE, HEALTH, USER_NAME, USER_MANIPULATIONS, STATUS, COMMENTS FROM {TABLE_NAME}", conn)
+    df = pd.read_sql(f"SELECT id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments FROM {TABLE_NAME}", conn)
     conn.close()
     return df
 
 def filter_records(db_file, column, value):
     """Filters records based on a column value in the specified database."""
     conn = sqlite3.connect(db_file)
-    df = pd.read_sql(f"SELECT ID_TATOO_NT, CAGE_NUM, MOUSELINE, GENOTYPE, GENDER, DOB, AVAILABLE, HEALTH, USER_NAME, USER_MANIPULATIONS, STATUS FROM {TABLE_NAME} WHERE {column} = ?", conn, params=(value,))
+    df = pd.read_sql(f"SELECT id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments FROM {TABLE_NAME} WHERE {column} = ?", conn, params=(value,))
     conn.close()
     return df
 
 def export_to_csv(db_file, csv_filename):
     """Exports the table to a CSV file from the specified database, excluding INDEX_ID."""
     conn = sqlite3.connect(db_file)
-    df = pd.read_sql(f"SELECT ID_TATOO_NT, CAGE_NUM, MOUSELINE, GENOTYPE, GENDER, DOB, AVAILABLE, HEALTH, USER_NAME, USER_MANIPULATIONS, STATUS FROM {TABLE_NAME}", conn)
+    df = pd.read_sql(f"SELECT id, cage_number, mouseline, genotype, gender, dob,available, health, username, user_manipulations, status, comments FROM {TABLE_NAME}", conn)
     df.to_csv(csv_filename, index=False)
     conn.close()
 
@@ -93,10 +93,9 @@ def insert_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, d
     cursor = conn.cursor()
 
     cursor.execute(f"""
-        INSERT INTO {TABLE_NAME} (ID_TATOO_NT, CAGE_NUM, MOUSELINE, GENOTYPE, GENDER, DOB, 
-                                  AVAILABLE, HEALTH, USER_NAME, USER_MANIPULATIONS, STATUS, COMMENTS)
+        INSERT INTO {TABLE_NAME} (id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (id_tatoo_nt, cage_num, mouseline, genotype, gender, dob, available, health, user_name, user_manipulations, status, comments))
+    """, (id, cage_number, mouseline, genotype, gender, dob, available, health, user_name, user_manipulations, status, comments))
 
     conn.commit()
     conn.close()
@@ -109,7 +108,7 @@ def update_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, d
     cursor = conn.cursor()
 
     # Retrieve INDEX_ID internally
-    cursor.execute(f"SELECT INDEX_ID FROM {TABLE_NAME} WHERE ID_TATOO_NT = ?", (id_tatoo_nt,))
+    cursor.execute(f"SELECT INDEX_ID FROM {TABLE_NAME} WHERE id = ?", (id,))
     index_id = cursor.fetchone()
 
     if not index_id:
@@ -120,9 +119,9 @@ def update_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, d
 
     cursor.execute(f"""
         UPDATE {TABLE_NAME}
-        SET CAGE_NUM = ?, MOUSELINE = ?, GENOTYPE = ?, GENDER = ?, DOB = ?, 
-            AVAILABLE = ?, HEALTH = ?, USER_NAME = ?, USER_MANIPULATIONS = ?, STATUS = ?, COMMENTS = ?
-        WHERE INDEX_ID = ?
+        SET cage_number = ?, mouseline = ?, genotype = ?, gender = ?, dob = ?, 
+            available = ?, health = ?, username = ?, user_manipulations = ?, status = ?, comments = ?
+        WHERE id = ?
     """, (cage_num, mouseline, genotype, gender, dob, available, health, user_name, user_manipulations, status, comments, index_id))
 
     conn.commit()
@@ -131,18 +130,18 @@ def update_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, d
 
 
 def delete_record(db_file, id_tatoo_nt):
-    """Deletes a record from the database using ID_TATOO_NT as the unique identifier."""
+    """Deletes a record from the database using id as the unique identifier."""
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
     # ✅ Ensure ID_TATOO_NT exists before trying to delete
-    cursor.execute(f"SELECT 1 FROM {TABLE_NAME} WHERE ID_TATOO_NT = ?", (id_tatoo_nt,))
+    cursor.execute(f"SELECT 1 FROM {TABLE_NAME} WHERE id = ?", (id,))
     if cursor.fetchone() is None:
         conn.close()
         return False  # No record found, return failure
 
     # ✅ Delete the record
-    cursor.execute(f"DELETE FROM {TABLE_NAME} WHERE ID_TATOO_NT = ?", (id_tatoo_nt,))
+    cursor.execute(f"DELETE FROM {TABLE_NAME} WHERE id = ?", (id,))
     conn.commit()
     conn.close()
 
@@ -159,14 +158,13 @@ def copy_row_to_new_db(id_tatoo_nt):
     cursor_old = conn_old.cursor()
     cursor_new = conn_new.cursor()
 
-    cursor_old.execute(f"SELECT ID_TATOO_NT, CAGE_NUM, MOUSELINE, GENOTYPE, GENDER, DOB, AVAILABLE, HEALTH, USER_NAME, USER_MANIPULATIONS, STATUS FROM {TABLE_NAME} WHERE ID_TATOO_NT = ?", (id_tatoo_nt,))
+    cursor_old.execute(f"SELECT id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments = ?", (id,))
     row = cursor_old.fetchone()
 
     if row:
         cursor_new.execute(f"""
-            INSERT INTO {TABLE_NAME} (ID_TATOO_NT, CAGE_NUM, MOUSELINE, GENOTYPE, GENDER, DOB, 
-                                      AVAILABLE, HEALTH, USER_NAME, USER_MANIPULATIONS, STATUS)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO {TABLE_NAME} (id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, row)
 
         conn_new.commit()
