@@ -1,9 +1,22 @@
 import sys
 import sqlite3
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, \
+import os
+os.environ["DISPLAY"] = ":99"
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, \
     QLineEdit, QLabel, QFileDialog, QHBoxLayout, QMessageBox, QComboBox
 from database_manager import fetch_data, filter_records, export_to_csv, insert_record, delete_record, \
     update_record, copy_row_to_new_db, create_empty_database, TABLE_NAME
+
+class MyMainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Mouse Database Manager")
+
+def run_gui():
+    app = QApplication([])
+    window = MyMainWindow()
+    window.show()
+    app.exec_()
 
 # Database file paths
 DB_FILE = "PPL_Scholl_428_MouseDatabase.db"
