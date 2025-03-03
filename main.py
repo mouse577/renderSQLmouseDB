@@ -1,27 +1,24 @@
-import subprocess
 import os
-import gui  # Your existing gui.py
-
-os.environ["DISPLAY"] = ":99"
+import subprocess
+import gui
 
 def start_xvfb():
-    subprocess.Popen(["Xvfb", ":99", "-screen", "0", "1024x768x24"])
-    print("✅ Xvfb started (virtual display running).")
+    # Force cleanup lock files (handle stale Xvfb)
+    os.system("rm -f /tmp/.X99-lock")
 
-def stop_xvfb():
-    subprocess.run(["pkill", "Xvfb"])
-    print("✅ Xvfb stopped.")
+    # Kill any existing Xvfb (best effort)
+    os.system("pkill Xvfb")
 
-if __name__ == "__main__":
+    # Start fresh Xvfb
+    os.system("Xvfb :99 -screen 0 1024x768x24 &")
 
-    start_xvfb()
-    
+    # Set DISPLAY for PyQt5
+    os.environ["DISPLAY"] = ":99"
+
+def initialize_database_from_github():
     subprocess.run(["python", "start_session.py"], check=True)
 
-    gui.run_gui()  # This calls your existing GUI's entry point
-
-    subprocess.run(["python", "end_session.py"], check=True)
-
-    stop_xvfb()
-    
-    print("✅ All done - data saved to GitHub.")
+if __name__ == "__main__":
+    start_xvfb()
+    initialize_database_from_github()
+    gui.run_gui()
