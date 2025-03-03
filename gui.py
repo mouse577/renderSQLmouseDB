@@ -1,7 +1,6 @@
 import sys
 import sqlite3
 import os
-os.environ["DISPLAY"] = ":99"
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, \
     QLineEdit, QLabel, QFileDialog, QHBoxLayout, QMessageBox, QComboBox
 from database_manager import fetch_data, filter_records, export_to_csv, insert_record, delete_record, \
