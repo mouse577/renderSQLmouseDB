@@ -2,6 +2,8 @@ import pandas as pd
 import sqlite3
 import requests
 
+DB_FILE = "mouse_database.db"
+
 def download_csv_from_github(url, filename):
     # headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(url)
