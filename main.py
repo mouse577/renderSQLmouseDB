@@ -1,5 +1,8 @@
 import subprocess
+import os
 import gui  # Your existing gui.py
+
+os.environ["DISPLAY"] = ":99"
 
 def start_xvfb():
     subprocess.Popen(["Xvfb", ":99", "-screen", "0", "1024x768x24"])
