@@ -1,10 +1,13 @@
 import sqlite3
 import pandas as pd
 
+
 # Database file paths
 DB_FILE = "mouse_database.db"  # Primary database
-TABLE_LIVE = "mouse_list.db"  # Secondary database
+TABLE_LIVE = "mouse_list"  # Secondary database
 TABLE_DECEASED = "deceased_mouse_list"  # Table name
+
+TABLE_NAME = TABLE_LIVE
 
 # Column names (ensures consistency across functions)
 COLUMN_NAMES = [
@@ -43,12 +46,12 @@ def initialize_database():
 
 def create_empty_database():
     """Creates the secondary (deceased) database if it does not exist."""
-    conn = sqlite3.connect(NEW_DB_FILE)
+    conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS {TABLE_NAME} (
-            id TEXT,
-            cage_number INTEGER,
+            id TEXT PRIMARY KEY,
+            cage_number TEXT,
             mouseline TEXT,
             genotype TEXT,
             gender TEXT,
@@ -57,7 +60,7 @@ def create_empty_database():
             health TEXT,
             username TEXT,
             user_manipulations TEXT,
-            status TEXT
+            status TEXT,
             comments TEXT
         )
     """)
@@ -65,12 +68,12 @@ def create_empty_database():
     conn.close()
 
 # ----------------- DATA MANAGEMENT FUNCTIONS -----------------
-def fetch_data(db_file):
-    """Fetches all data from the specified SQLite database, excluding INDEX_ID."""
+def fetch_data(db_file, table_name):
     conn = sqlite3.connect(db_file)
-    df = pd.read_sql(f"SELECT id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments FROM {TABLE_NAME}", conn)
+    df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
     conn.close()
     return df
+
 
 def filter_records(db_file, column, value):
     """Filters records based on a column value in the specified database."""
@@ -87,23 +90,25 @@ def export_to_csv(db_file, csv_filename):
     conn.close()
 
 # ----------------- RECORD OPERATIONS -----------------
-def insert_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, dob, available, health, user_name, user_manipulations, status, comments):
+def insert_record(db_file, table_name, record):
     """Inserts a new record into the specified database, including COMMENTS."""
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
-    cursor.execute(f"""
-        INSERT INTO {TABLE_NAME} (id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (id, cage_number, mouseline, genotype, gender, dob, available, health, user_name, user_manipulations, status, comments))
-
+    columns = ', '.join(record.keys())
+    placeholders = ', '.join(['?'] * len(record))
+    
+    sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+    
+    cursor.execute(sql, tuple(record.values()))
+    
     conn.commit()
     conn.close()
-    print("✅ New record inserted successfully.")
+    print(f"✅ New record inserted successfully into {table_name}.")
 
 
-def update_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, dob, available, health, user_name, user_manipulations, status, comments):
-    """Updates an existing record using ID_TATOO_NT as the unique identifier, including COMMENTS."""
+def update_record(db_file, id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments):
+    """Updates an existing record using id as the unique identifier, including COMMENTS."""
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
 
@@ -118,7 +123,7 @@ def update_record(db_file, id_tatoo_nt, cage_num, mouseline, genotype, gender, d
     index_id = index_id[0]  # Extract INDEX_ID
 
     cursor.execute(f"""
-        UPDATE {TABLE_NAME}
+        UPDATE {table_name} SET ... WHERE id = ?
         SET cage_number = ?, mouseline = ?, genotype = ?, gender = ?, dob = ?, 
             available = ?, health = ?, username = ?, user_manipulations = ?, status = ?, comments = ?
         WHERE id = ?
@@ -150,15 +155,15 @@ def delete_record(db_file, id_tatoo_nt):
 
 
 # ----------------- ROW COPY FUNCTION -----------------
-def copy_row_to_new_db(id_tatoo_nt):
-    """Copies a specific row from the primary database to the secondary database using ID_TATOO_NT."""
+def copy_row_to_new_db(id):
+    """Copies a specific row from the primary database to the secondary database using id."""
     conn_old = sqlite3.connect(DB_FILE)
     conn_new = sqlite3.connect(NEW_DB_FILE)
 
     cursor_old = conn_old.cursor()
     cursor_new = conn_new.cursor()
 
-    cursor_old.execute(f"SELECT id, cage_number, mouseline, genotype, gender, dob, available, health, username, user_manipulations, status, comments = ?", (id,))
+    cursor_old.execute(f"SELECT * FROM {TABLE_NAME} WHERE id = ?", (id,))
     row = cursor_old.fetchone()
 
     if row:
