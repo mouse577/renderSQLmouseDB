@@ -3,6 +3,8 @@ import sqlite3
 import requests
 
 DB_FILE = "mouse_database.db"
+TABLE_LIVE = "mouse_list"
+TABLE_DECEASED = "deceased_mouse_list"
 
 def download_csv_from_github(url, filename):
     # headers = {"Authorization": f"token {GITHUB_TOKEN}"}
