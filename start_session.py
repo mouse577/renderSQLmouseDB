@@ -9,7 +9,7 @@ def download_csv_from_github(url, filename):
         f.write(response.content)
 
 def initialize_database_from_github():
-    mouse_list_url = "https://github.com/mouse577/renderSQLmouseDB/blob/main/initial_mouse_list.csv"
+    mouse_list_url = "https://raw.githubusercontent.com/mouse577/renderSQLmouseDB/refs/heads/main/initial_mouse_list.csv"
     deceased_list_url = "https://github.com/mouse577/renderSQLmouseDB/blob/main/initial_deceased_list.csv"
 
     download_csv_from_github(mouse_list_url, 'mouse_list.csv')
