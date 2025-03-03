@@ -6,6 +6,11 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPu
 from database_manager import fetch_data, filter_records, export_to_csv, insert_record, delete_record, \
     update_record, copy_row_to_new_db, create_empty_database, TABLE_NAME
 
+# Database file paths
+DB_FILE = "mouse_database.db"
+TABLE_LIVE = "mouse_list"
+TABLE_DECEASED = "deceased_mouse_list.db"
+
 class MyMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -16,10 +21,6 @@ def run_gui():
     window = MyMainWindow()
     window.show()
     app.exec_()
-
-# Database file paths
-DB_FILE = "PPL_Scholl_428_MouseDatabase.db"
-NEW_DB_FILE = "PPL_Scholl_428_Deceased_MouseDatabase.db"
 
 
 class DatabaseApp(QWidget):
@@ -133,7 +134,7 @@ class DatabaseApp(QWidget):
     def search_data(self):
         """Filters data based on search input in the selected database."""
         mouseline = self.search_input.text()
-        df = filter_records(self.current_db, "MOUSELINE", mouseline)
+        df = filter_records(self.current_db, "mouseline", mouseline)
         self.populate_table(df)
 
     def export_data(self):
@@ -151,11 +152,11 @@ class DatabaseApp(QWidget):
         for row_idx, row in df.iterrows():
             for col_idx, value in enumerate(row):
                 item = QTableWidgetItem(str(value))
-                if col_idx == df.columns.get_loc("COMMENTS"):
+                if col_idx == df.columns.get_loc("comments"):
                     item.setTextAlignment(1)
                 self.table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
 
-            self.table.setColumnWidth(df.columns.get_loc("COMMENTS"), 400)
+            self.table.setColumnWidth(df.columns.get_loc("comments"), 400)
 
     def copy_selected_row(self):
         """Copies the selected row to the deceased database and updates UI."""
@@ -190,11 +191,11 @@ class DatabaseApp(QWidget):
 
         selected_row = selected_rows[0].row()
 
-        # ✅ Fetch `INDEX_ID` from database using primary key fields (e.g., ID_TATOO_NT)
+        # ✅ Fetch `INDEX_ID` from database using primary key fields (e.g., id)
         id_tatoo_nt = self.table.item(selected_row, 0).text()
         conn = sqlite3.connect(self.current_db)
         cursor = conn.cursor()
-        cursor.execute(f"SELECT INDEX_ID FROM {TABLE_NAME} WHERE ID_TATOO_NT = ?", (id_tatoo_nt,))
+        cursor.execute(f"SELECT INDEX_ID FROM {TABLE_NAME} WHERE id = ?", (id,))
         index_id = cursor.fetchone()
         conn.close()
 
@@ -226,14 +227,14 @@ class DatabaseApp(QWidget):
         QMessageBox.information(self, "Success", "New record added successfully.")
 
     def delete_selected_record(self):
-        """Deletes the selected record using ID_TATOO_NT and refreshes the UI."""
+        """Deletes the selected record using id and refreshes the UI."""
         selected = self.table.currentRow()
         if selected >= 0:
-            # ✅ Fetch ID_TATOO_NT directly from table (first column)
-            id_tatoo_nt = self.table.item(selected, 0).text().strip()  # Ensure no trailing spaces
+            # ✅ Fetch id directly from table (first column)
+            id = self.table.item(selected, 0).text().strip()  # Ensure no trailing spaces
 
-            # ✅ Call delete_record() with ID_TATOO_NT
-            success = delete_record(self.current_db, id_tatoo_nt)
+            # ✅ Call delete_record() with id
+            success = delete_record(self.current_db, id)
 
             if success:
                 self.load_data()  # Refresh UI after deletion
