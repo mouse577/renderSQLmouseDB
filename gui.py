@@ -9,7 +9,7 @@ from database_manager import fetch_data, filter_records, export_to_csv, insert_r
 # Database file paths
 DB_FILE = "mouse_database.db"
 TABLE_LIVE = "mouse_list"
-TABLE_DECEASED = "deceased_mouse_list.db"
+TABLE_DECEASED = "deceased_mouse_list"
 
 class MyMainWindow(QMainWindow):
     def __init__(self):
@@ -26,23 +26,20 @@ def run_gui():
 class DatabaseApp(QWidget):
     def __init__(self):
         super().__init__()
-
         self.setWindowTitle("Mouse List Database Manager")
         self.setGeometry(100, 100, 900, 600)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        # Database selection
-        self.db_label = QLabel("Select Database:")
+        self.db_label = QLabel("Select Database Table:")
         self.layout.addWidget(self.db_label)
 
         self.db_selector = QComboBox()
-        self.db_selector.addItems(["Primary Database", "Deceased Database"])
-        self.db_selector.currentIndexChanged.connect(self.switch_database)
+        self.db_selector.addItems(["Live Mice", "Deceased Mice"])
+        self.db_selector.currentIndexChanged.connect(self.load_data)
         self.layout.addWidget(self.db_selector)
 
-        # Search Bar
         self.search_label = QLabel("Search by Mouseline:")
         self.layout.addWidget(self.search_label)
 
@@ -53,16 +50,13 @@ class DatabaseApp(QWidget):
         self.search_button.clicked.connect(self.search_data)
         self.layout.addWidget(self.search_button)
 
-        # Table
         self.table = QTableWidget()
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.itemSelectionChanged.connect(self.fill_update_fields)
-        self.table.setSortingEnabled(True)  # ✅ ENABLE SORTING
+        self.table.setSortingEnabled(True)
         self.layout.addWidget(self.table)
 
-        # Buttons Layout
         button_layout = QHBoxLayout()
-
         self.refresh_button = QPushButton("Refresh Data")
         self.refresh_button.clicked.connect(self.load_data)
         button_layout.addWidget(self.refresh_button)
@@ -71,182 +65,120 @@ class DatabaseApp(QWidget):
         self.export_button.clicked.connect(self.export_data)
         button_layout.addWidget(self.export_button)
 
-        self.copy_button = QPushButton("Copy Selected Row to New DB")
+        self.copy_button = QPushButton("Copy Selected Row to Deceased")
         self.copy_button.clicked.connect(self.copy_selected_row)
         button_layout.addWidget(self.copy_button)
 
         self.layout.addLayout(button_layout)
 
-        # Add/Edit Record Inputs
         self.fields = {}
         labels = ["id", "cage_number", "mouseline", "genotype", "gender", "dob", "available", "health",
                   "username", "user_manipulations", "status", "comments"]
-
         for label in labels:
             field_label = QLabel(f"Enter {label}:")
             self.layout.addWidget(field_label)
 
             field_input = QLineEdit()
-
-            if label == "COMMENTS":
-                field_input.setFixedWidth(400)
-
             self.layout.addWidget(field_input)
-
             self.fields[label] = field_input
 
         self.add_button = QPushButton("Add Record")
         self.add_button.clicked.connect(self.add_record)
         self.layout.addWidget(self.add_button)
 
-        self.update_button = QPushButton("Update Selected Row")
-        self.update_button.clicked.connect(self.update_selected_row)
+        self.update_button = QPushButton("Update Selected Record")
+        self.update_button.clicked.connect(self.update_selected_record)
         self.layout.addWidget(self.update_button)
 
         self.delete_button = QPushButton("Delete Selected Record")
         self.delete_button.clicked.connect(self.delete_selected_record)
         self.layout.addWidget(self.delete_button)
 
-        # Load data on startup
-        self.current_db = DB_FILE  # Default database
         self.load_data()
 
-    def switch_database(self):
-        """Switches between the primary and deceased databases and reloads data."""
-        self.current_db = DB_FILE if self.db_selector.currentIndex() == 0 else NEW_DB_FILE
-        self.load_data()
+    def get_selected_table(self):
+        return TABLE_LIVE if self.db_selector.currentIndex() == 0 else TABLE_DECEASED
 
     def load_data(self):
-        """Loads data from the selected SQLite database into the table."""
-        self.table.setSortingEnabled(False)
-        df = fetch_data(self.current_db)
-        if df.empty:
-            self.table.setRowCount(0)
-            self.table.setColumnCount(0)
-        else:
-            self.populate_table(df)
-
-        self.table.setSortingEnabled(True)
-        return
-
+        table_name = self.get_selected_table()
+        df = fetch_data(DB_FILE, table_name)
         self.populate_table(df)
 
     def search_data(self):
-        """Filters data based on search input in the selected database."""
+        table_name = self.get_selected_table()
         mouseline = self.search_input.text()
-        df = filter_records(self.current_db, "mouseline", mouseline)
+        df = filter_records(DB_FILE, table_name, "mouseline", mouseline)
         self.populate_table(df)
 
     def export_data(self):
-        """Exports the table to a CSV file."""
-        filename, _ = QFileDialog.getSaveFileName(self, "Save CSV", "", "CSV Files (*.csv)")
+        table_name = self.get_selected_table()
+        filename, _ = QFileDialog.getSaveFileName(self, "Save CSV", f"{table_name}.csv", "CSV Files (*.csv)")
         if filename:
-            export_to_csv(self.current_db, filename)
+            export_to_csv(DB_FILE, table_name, filename)
 
     def populate_table(self, df):
-        """Populates the table widget with DataFrame data (excluding INDEX_ID)."""
         self.table.setRowCount(df.shape[0])
-        self.table.setColumnCount(df.shape[1])  # ✅ Exclude INDEX_ID
+        self.table.setColumnCount(df.shape[1])
         self.table.setHorizontalHeaderLabels(df.columns)
 
         for row_idx, row in df.iterrows():
             for col_idx, value in enumerate(row):
                 item = QTableWidgetItem(str(value))
-                if col_idx == df.columns.get_loc("comments"):
-                    item.setTextAlignment(1)
-                self.table.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
-
-            self.table.setColumnWidth(df.columns.get_loc("comments"), 400)
-
-    def copy_selected_row(self):
-        """Copies the selected row to the deceased database and updates UI."""
-        selected = self.table.currentRow()
-        if selected >= 0:
-            record_id = self.table.item(selected, 0).text()
-            copy_row_to_new_db(record_id)
-            QMessageBox.information(self, "Success", f"Row {record_id} copied to the deceased database.")
-            self.load_data()  # Refresh UI
-        else:
-            QMessageBox.warning(self, "Selection Error", "Please select a row to copy.")
+                self.table.setItem(row_idx, col_idx, item)
 
     def fill_update_fields(self):
-        """Fills input fields with selected row's data for editing (adjusted for no INDEX_ID)."""
         selected_rows = self.table.selectionModel().selectedRows()
         if not selected_rows:
-            return  # No row selected
-
+            return
         selected_row = selected_rows[0].row()
-
         for col_idx, label in enumerate(self.fields.keys()):
-            item = self.table.item(selected_row, col_idx)  # ✅ No longer skipping INDEX_ID
-            if item:
-                self.fields[label].setText(item.text())
+            item = self.table.item(selected_row, col_idx)
+            self.fields[label].setText(item.text() if item else "")
 
-    def update_selected_row(self):
-        """Updates the selected row with new values from the input fields."""
-        selected_rows = self.table.selectionModel().selectedRows()
-        if not selected_rows:
-            QMessageBox.warning(self, "Selection Error", "Please select a row to update.")
+    def add_record(self):
+        table_name = self.get_selected_table()
+        record = {label: self.fields[label].text() for label in self.fields}
+        insert_record(DB_FILE, table_name, record)
+        self.load_data()
+        QMessageBox.information(self, "Success", "Record added successfully.")
+
+    def update_selected_record(self):
+        selected = self.table.currentRow()
+        if selected < 0:
+            QMessageBox.warning(self, "Error", "No record selected.")
             return
-
-        selected_row = selected_rows[0].row()
-
-        # ✅ Fetch `INDEX_ID` from database using primary key fields (e.g., id)
-        id_tatoo_nt = self.table.item(selected_row, 0).text()
-        conn = sqlite3.connect(self.current_db)
-        cursor = conn.cursor()
-        cursor.execute(f"SELECT INDEX_ID FROM {TABLE_NAME} WHERE id = ?", (id,))
-        index_id = cursor.fetchone()
-        conn.close()
-
-        if not index_id:
-            QMessageBox.warning(self, "Error", "Could not find the record in the database.")
-            return
-
-        index_id = index_id[0]  # Extract INDEX_ID
-
-        values = [self.fields[label].text() for label in self.fields]
-
-        if len(values) < 12:
-            values.append("")
-
-        update_record(self.current_db, *values)
+        table_name = self.get_selected_table()
+        record_id = self.table.item(selected, 0).text()
+        record = {label: self.fields[label].text() for label in self.fields}
+        update_record(DB_FILE, table_name, record_id, record)
         self.load_data()
         QMessageBox.information(self, "Success", "Record updated successfully.")
 
-    def add_record(self):
-        """Adds a new record to the selected database and ensures COMMENTS is included."""
-        values = [self.fields[label].text() for label in self.fields]
-
-        # ✅ Ensure COMMENTS is included (if missing, add an empty string)
-        if len(values) < 12:
-            values.append("")  # Default empty COMMENTS field
-
-        insert_record(self.current_db, *values)  # ✅ Now always passes 13 arguments
-        self.load_data()
-        QMessageBox.information(self, "Success", "New record added successfully.")
-
     def delete_selected_record(self):
-        """Deletes the selected record using id and refreshes the UI."""
         selected = self.table.currentRow()
-        if selected >= 0:
-            # ✅ Fetch id directly from table (first column)
-            id = self.table.item(selected, 0).text().strip()  # Ensure no trailing spaces
-
-            # ✅ Call delete_record() with id
-            success = delete_record(self.current_db, id)
-
-            if success:
-                self.load_data()  # Refresh UI after deletion
-                QMessageBox.information(self, "Success", f"Record {id_tatoo_nt} deleted successfully.")
-            else:
-                QMessageBox.warning(self, "Error", "Record not found or could not be deleted.")
+        if selected < 0:
+            QMessageBox.warning(self, "Error", "No record selected.")
+            return
+        table_name = self.get_selected_table()
+        record_id = self.table.item(selected, 0).text()
+        if delete_record(DB_FILE, table_name, record_id):
+            self.load_data()
+            QMessageBox.information(self, "Success", f"Record {record_id} deleted successfully.")
         else:
-            QMessageBox.warning(self, "Selection Error", "Please select a record to delete.")
+            QMessageBox.warning(self, "Error", "Record could not be found or deleted.")
 
+    def copy_selected_row(self):
+        selected = self.table.currentRow()
+        if selected < 0:
+            QMessageBox.warning(self, "Error", "No record selected.")
+            return
+        record_id = self.table.item(selected, 0).text()
+        copy_row_to_new_db(DB_FILE, record_id)
+        QMessageBox.information(self, "Success", f"Row {record_id} copied to deceased list.")
+        self.load_data()
 
 def run_gui():
-    create_empty_database()  # Ensure the new database is created before GUI starts
+    create_empty_database(DB_FILE)  # Ensure database/tables exist before GUI starts
     app = QApplication(sys.argv)
     window = DatabaseApp()
     window.show()
