@@ -3,6 +3,7 @@ import sqlite3
 import requests
 
 def download_csv_from_github(url, filename):
+    # headers = {"Authorization": f"token {GITHUB_TOKEN}"}
     response = requests.get(url)
     response.raise_for_status()
     with open(filename, 'wb') as f:
