@@ -21,6 +21,15 @@ def save_database_to_github():
 
     subprocess.run(["git", "add", "mouse_list.csv", "deceased_mouse_list.csv"])
     subprocess.run(["git", "commit", "-m", "Automated backup of mouse database tables"])
+
+    result = subprocess.run(["git", "push", repo_url], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print("❌ Failed to push changes to GitHub:")
+        print(result.stderr)
+    else:
+        print("✅ Database changes saved to GitHub.")
+    
     subprocess.run(["git", "push", repo_url])
 
 if __name__ == "__main__":
