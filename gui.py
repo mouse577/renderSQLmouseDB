@@ -78,8 +78,8 @@ class DatabaseApp(QWidget):
 
         # Add/Edit Record Inputs
         self.fields = {}
-        labels = ["ID_TATOO_NT", "CAGE_NUM", "MOUSELINE", "GENOTYPE", "GENDER", "DOB", "AVAILABLE", "HEALTH",
-                  "USER_NAME", "USER_MANIPULATIONS", "STATUS", "COMMENTS"]
+        labels = ["id", "cage_number", "mouseline", "genotype", "gender", "dob", "available", "health",
+                  "username", "user_manipulations", "status", "comments"]
 
         for label in labels:
             field_label = QLabel(f"Enter {label}:")
