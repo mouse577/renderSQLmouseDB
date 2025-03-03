@@ -3,8 +3,8 @@ import pandas as pd
 
 # Database file paths
 DB_FILE = "mouse_database.db"  # Primary database
-NEW_DB_FILE = "PPL_Scholl_428_Deceased_MouseDatabase.db"  # Secondary database
-TABLE_NAME = "mouse_list"  # Table name
+TABLE_LIVE = "mouse_list.db"  # Secondary database
+TABLE_DECEASED = "deceased_mouse_list"  # Table name
 
 # Column names (ensures consistency across functions)
 COLUMN_NAMES = [
